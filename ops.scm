@@ -67,10 +67,19 @@ q;;Operations
 			   (data (op-data (car folded)))
 			   (oplist (map op-next (reverse (filter (negate op-done?) folded)))))
 		  (op (op-parallel oplist) data)))))
-		  
-		  
-					  
-  
+
+
+
+;;Macros :)
+
+(define-macro (ops data-varname . rest)
+  (let ((oplist (map (lambda(form)
+					   ;;each form has the syntax: (body) or ((body)(body...)) for parallel ops
+					   `(op-atomic (lambda(,data-varname)
+									 ,form)))
+					 rest)))
+
+	`(op-chain ,(cons 'list oplist))))
 
 
 ;;TEsts
@@ -81,3 +90,10 @@ q;;Operations
   
 (let ((op (op-parallel (list (op-atomic 1+) (op-delayed 1+ 2) (op-chain (list (op-delayed 1+ 3) (op-atomic 1+))) (op-atomic 1-)))))
   (op-resolve (op 5)))
+
+
+(ops var
+	 (1+ var)
+	 'bar
+	 (display 'foo)
+	 (display var))
