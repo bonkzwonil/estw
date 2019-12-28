@@ -1,4 +1,4 @@
-q;;Operations
+;;Operations
 
 ;;An op can be called by his next method and produces a new op and a intermediate result
 ;;
@@ -22,6 +22,8 @@ q;;Operations
 
 (define (op-done? op)
   (not (op-next op)))
+
+(define op? pair?)
 
 (define (op-delayed work ticks)
   "An delayed Op simulates the duration of work of atomic tasks"
@@ -75,8 +77,11 @@ q;;Operations
 (define-macro (ops data-varname . rest)
   (let ((oplist (map (lambda(form)
 					   ;;each form has the syntax: (body) or ((body)(body...)) for parallel ops
-					   `(op-atomic (lambda(,data-varname)
-									 ,form)))
+					   ;;Special form for delay is a number
+					   (if (number? form)
+						   `(op-delayed (lambda(x)x) ,form)
+						   `(op-atomic (lambda(,data-varname)
+										 ,form))))
 					 rest)))
 
 	`(op-chain ,(cons 'list oplist))))
@@ -95,5 +100,14 @@ q;;Operations
 (ops var
 	 (1+ var)
 	 'bar
+	 (display 'foo)
+	 8
+	 (display var))
+
+(ops var
+	 (1+ var)
+	 (ops foo
+		  (+ foo 3)
+		  (- foo 9))
 	 (display 'foo)
 	 (display var))
