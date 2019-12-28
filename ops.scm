@@ -1,4 +1,4 @@
-;;Operations
+q;;Operations
 
 ;;An op can be called by his next method and produces a new op and a intermediate result
 ;;
@@ -24,7 +24,7 @@
   (not (op-next op)))
 
 (define (op-delayed work ticks)
-  "An Op simulates the duration of work of atomic tasks"
+  "An delayed Op simulates the duration of work of atomic tasks"
   (lambda(data)
 	(if (positive? ticks)
 		(op (op-delayed work (1- ticks)) data)

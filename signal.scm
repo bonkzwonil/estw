@@ -1,60 +1,32 @@
 ;; Testo
 
-
-(define netz
-
-  '( ((gleis . 9872) ((az 0)) (signal . 2))
-	 ((signal . 1) ((m 0)) (gleis . 9872))
-	 ((signal . 2) ((m 0)) (gleis . 2))
-	 ((gleis . 2) () (weiche . 1))
-	 ((weiche . 1) (()) ((gleis . 3) (gleis . 4)))
-	 ((gleis . 4) () ())
-	 ((gleis . 3) () ())))
-
-(define (make-signal nr next) `((signal . ,nr) (()) next))
-
-(define (make-gleis nr next) `((gleis . ,nr) () next))
-
-(define (make-weiche nr a b) `((weiche . ,nr) () (a b)))
-
-(define netz-in '(
-				  ((gleis 9872) (signal  2) (gleis 3) (weiche 1) (gleis 4))
-				  ((weiche 1) (gleis 5) (signal 3) (gleis 9))))
+(define (signal-before netz id)
+  (let ((before-id (car (netz-referer netz id))))
+	(if (eqv? 'signal (car before-id))
+		before-id
+		(signal-before netz before-id))))
   
-
-(define (node-valid-type? n)
-  (memq n '(signal gleis weiche)))
-	 
-(define (node-id? n)
-  (and (pair? n)
-	   (node-valid-type? (car n))))
-
-(define (with-next-nodes node fun)
-  (let ((nodes (caddr node)))
-	(map (lambda (x)
-		   (fun (assoc x netz)))
-		 (if (list? nodes)
-			 nodes
-			 (list nodes)))))
-		
-(define (plan-draw node)
-  (when node
-	(display (car node))
-	(when (caddr node) (display " --> "))
-	(with-next-nodes node plan-draw)
-	(display " < ")
-	node))
-
-
-  
-
-(define (signal nr) `((type signal) (nr ,nr) (m 0) (zs 0)))
-
-(define (weiche nr) `((type weiche) (nr ,nr) (m 0) (in nil) (out (nil nil))))
-
-(define strecke '(0 0 nil nil))
-
-(define (connect a b) ; connect a mit b => strecke
-  `(0 0 ,a ,b))
-
-  (define plan 
+(define (signal-cmd-HAGT id) ; HaGT = Signal auf Hp0 / Halt
+	;;; Signal rot stellen = vorsignal gelb (falls grün) -> Signal rot
+  (lambda(netz)
+	(let 	((vorsignal-id (signal-before netz id)))
+	  (let ((signal (netz-get netz id)))
+		(if (eqv? (node-prop-get signal 'HS) 'Hp0); HS = Hp0? Done :)
+			(op-nop)
+			(op-chain (list
+					   (signal-cmd-KS2 vorsignal-id)
+					   (op-delayed (lambda(netz)
+									 (node-prop-set signal 'HS 'Hp0)
+									 netz)
+								   1))))))))
+					
+(define (signal-cmd-KS2 id) ; KS2 = Signal auf KS2 / Halt erwarten (intern)
+  (op-delayed (lambda(netz)
+				(let ((signal (netz-get netz id)))
+				  (if (eqv? (node-prop-get signal 'HS) 'Hp0)
+					  netz
+					  (begin (node-prop-set signal 'HS 'KS2)
+							 netz))))
+			  1))
+							  
+			   
