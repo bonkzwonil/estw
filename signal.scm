@@ -1,5 +1,6 @@
 ;; Testo
 
+
 (define netz
 
   '( ((gleis . 9872) ((az 0)) (signal . 2))

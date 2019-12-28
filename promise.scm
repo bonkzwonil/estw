@@ -6,20 +6,20 @@
 		(resolved #f)
 		(value-listener #f)
 		(error-listener #f))
-	(let ((resolve (λ (x)
+	(let ((resolve (lambda (x)
 					 (set! resolved #t)
 					 (set! value x)
 					 (when value-listener (value-listener x))))
-		  (reject (λ (x)
+		  (reject (lambda (x)
 					(set! resolved #t)
 					(set! error x)
 					(when error-listener (error-listener x)))))
 	  
 	  (cb resolve reject)
-	  (let ((then-fun (λ (f)  (if resolved
+	  (let ((then-fun (lambda (f)  (if resolved
 									   (f value)
 									   (set! value-listener f))))
-			(catch-fun (λ (f) (if resolved
+			(catch-fun (lambda (f) (if resolved
 									   (f error)
 									   (set! error-listener f)))))
 	  `(promise ,then-fun ,catch-fun)))))
@@ -35,27 +35,28 @@
 (define timeout #f)
 (define dispatch #f)
 (let ((dispatchers '()))
-  (set! timeout (λ (fun time)
-				  (set! dispatchers (append! dispatchers (list (cons time fun))))))
-  (set! dispatch (λ (time)
-				   (set! dispatchers (map (λ (x) (cons (- (car x) time) (cdr x))) dispatchers))
-				   (map (λ (x) ((cdr x)))
-						(filter (λ (x) (negative? (car x))) dispatchers))
-				   (set! dispatchers (filter (λ (x) (not (negative? (car x)))) dispatchers)))))
+  (set! timeout (lambda (fun timeout)
+				  (set! dispatchers (append! dispatchers (list (cons timeout fun))))))
+  (set! dispatch (lambda (timeout)
+				   (set! dispatchers (map (lambda (x) (cons (- (car x) timeout) (cdr x))) dispatchers))
+				   (map (lambda (x) ((cdr x)))
+						(filter (lambda (x) (negative? (car x))) dispatchers))
+				   (set! dispatchers (filter (lambda (x) (not (negative? (car x)))) dispatchers)))))
 				   
   
-  
+
+
 
 ;;test
-(let ((p1 (promise (λ (resolve reject) (resolve 1)))))
+(let ((p1 (promise (lambda (resolve reject) (resolve 1)))))
   (then p1 display)
-  (then-catch p1 throw))
+  (then-catch p1 'throw))
 
-(let ((p1 (promise (λ (resolve reject) (reject 1)))))
+(let ((p1 (promise (lambda (resolve reject) (reject 1)))))
   (then p1 display)
-  (then-catch p1 throw))
+  (then-catch p1 'throw))
 
-(let ((p2 (promise (λ (resolve reject) (timeout (λ () (resolve 'Yo)) 2)))))
+(let ((p2 (promise (lambda (resolve reject) (timeout (lambda () (resolve 'Yo)) 2)))))
   (then p2 display)
   (then-catch p2 throw))
 
